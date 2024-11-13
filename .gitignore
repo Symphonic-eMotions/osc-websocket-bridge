@@ -47,3 +47,6 @@ yarn.lock
 
 # Geschiedenis map
 .history
+
+# Development / debugging
+debugger.js

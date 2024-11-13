@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSC WebSocket Client</title>
+</head>
+<body>
+<h1>OSC WebSocket Client</h1>
+<div id="osc-messages"></div>
+
+<script>
+    const ws = new WebSocket('ws://localhost:8080');
+
+    ws.onopen = () => {
+        console.log('Verbonden met WebSocket-server');
+    };
+
+    ws.onmessage = (event) => {
+        const oscMessage = JSON.parse(event.data);
+        console.log('Ontvangen OSC bericht:', oscMessage);
+
+        // Toon het OSC-bericht in de browser
+        const messageDiv = document.createElement('div');
+        messageDiv.textContent = `Address: ${oscMessage.address}, Args: ${oscMessage.args.join(', ')}`;
+        document.getElementById('osc-messages').appendChild(messageDiv);
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket-verbinding gesloten');
+    };
+</script>
+</body>
+</html>

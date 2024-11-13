@@ -3,8 +3,8 @@ const OSC = require('node-osc');
 const WebSocket = require('ws');
 
 // OSC server setup
-const oscServer = new OSC.Server(12345, '0.0.0.0'); // Luister op poort 12345 voor OSC
-console.log('OSC-server gestart op poort 12345');
+const oscServer = new OSC.Server(8000, '0.0.0.0'); // Luister op poort 12345 voor OSC
+console.log('OSC-server gestart op poort 8000');
 
 // WebSocket server setup
 const wss = new WebSocket.Server({ port: 8080 }); // Luister op poort 8080 voor WebSocket
