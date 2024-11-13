@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSC WebSocket Client</title>
+    <style>
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        .slider-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<h1>OSC WebSocket Client</h1>
+<button id="start-button">Start</button>
+<button id="stop-button" disabled>Stop</button>
+<div id="sliders-container"></div>
+
+<script>
+    let ws;
+    const sliders = {}; // Object om sliders bij te houden per unieke OSC-stream
+
+    // Functie om een nieuwe slider toe te voegen
+    function createSlider(address) {
+        const container = document.createElement('div');
+        container.classList.add('slider-container');
+
+        const label = document.createElement('div');
+        label.classList.add('slider-label');
+        label.textContent = `Stream: ${address}`;
+        container.appendChild(label);
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '0';
+        slider.max = '1';
+        slider.step = '0.01'; // Hiermee kun je waarden in stappen van 0.01 hebben
+        slider.value = '0';
+        slider.classList.add('slider');
+        container.appendChild(slider);
+
+        // Voeg de slider toe aan de sliders-container in de HTML
+        document.getElementById('sliders-container').appendChild(container);
+
+        // Sla de slider op in het `sliders` object voor snelle toegang
+        sliders[address] = slider;
+    }
+
+    // Functie om een sliderwaarde bij te werken op basis van inkomende OSC-berichten
+    function updateSlider(address, value) {
+        if (sliders[address]) {
+            sliders[address].value = value;
+        } else {
+            // Maak een nieuwe slider als het adres nog niet bestaat
+            createSlider(address);
+            sliders[address].value = value;
+        }
+    }
+
+    // Start WebSocket-verbinding
+    function startWebSocket() {
+        ws = new WebSocket('ws://localhost:8080');
+
+        ws.onopen = () => {
+            console.log('Verbonden met WebSocket-server');
+            document.getElementById('start-button').disabled = true;
+            document.getElementById('stop-button').disabled = false;
+        };
+
+        ws.onmessage = (event) => {
+            const oscMessage = JSON.parse(event.data);
+            console.log('Ontvangen OSC bericht:', oscMessage);
+
+            // Update of maak een slider aan voor elk uniek OSC-adres
+            const address = oscMessage.address;
+            const args = oscMessage.args[0]; // Eerste argument, pas aan naar behoefte
+
+            // Zorg ervoor dat de waarde tussen 0 en 1 valt, indien nodig
+            const scaledValue = Math.max(0, Math.min(1, args));
+            updateSlider(address, scaledValue);
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket-verbinding gesloten');
+            document.getElementById('start-button').disabled = false;
+            document.getElementById('stop-button').disabled = true;
+        };
+    }
+
+    // Stop WebSocket-verbinding
+    function stopWebSocket() {
+        if (ws) {
+            ws.close();
+            console.log('WebSocket-verbinding wordt gesloten');
+        }
+    }
+
+    // Event listeners voor de knoppen
+    document.getElementById('start-button').addEventListener('click', startWebSocket);
+    document.getElementById('stop-button').addEventListener('click', stopWebSocket);
+</script>
+</body>
+</html>
