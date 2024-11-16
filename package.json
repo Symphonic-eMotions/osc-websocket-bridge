@@ -12,6 +12,10 @@
   "dependencies": {
     "@types/ws": "^8.5.13",
     "node-osc": "^9.1.4",
+    "tone": "^15.0.4",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
   }
 }
