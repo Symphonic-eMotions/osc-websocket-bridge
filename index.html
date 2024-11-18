@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OSC WebSocket Client</title>
+    <link rel="stylesheet" href="output.css">
 </head>
-<body>
-<h1>OSC WebSocket Client</h1>
-<button id="start-button">Start</button>
-<button id="stop-button" disabled>Stop</button>
-<div id="osc-messages"></div>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center">
+<h1 class="text-4xl font-bold mb-8">OSC WebSocket Client</h1>
+<div class="space-x-4">
+    <button id="start-button" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-all">Start</button>
+    <button id="stop-button" disabled class="px-4 py-2 bg-red-500 text-white rounded opacity-50 cursor-not-allowed">Stop</button>
+</div>
+<div id="osc-messages" class="mt-8 space-y-2"></div>
 
 <script>
     let ws;
 
-    // Functie om de WebSocket-verbinding te starten
     function startWebSocket() {
         ws = new WebSocket('ws://localhost:8080');
 
@@ -22,15 +24,17 @@
             console.log('Verbonden met WebSocket-server');
             document.getElementById('start-button').disabled = true;
             document.getElementById('stop-button').disabled = false;
+            document.getElementById('stop-button').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-button').classList.add('hover:bg-red-600');
         };
 
         ws.onmessage = (event) => {
             const oscMessage = JSON.parse(event.data);
             console.log('Ontvangen OSC bericht:', oscMessage);
 
-            // Toon het OSC-bericht in de browser
             const messageDiv = document.createElement('div');
             messageDiv.textContent = `Address: ${oscMessage.address}, Args: ${oscMessage.args.join(', ')}`;
+            messageDiv.className = "bg-gray-800 p-4 rounded shadow";
             document.getElementById('osc-messages').appendChild(messageDiv);
         };
 
@@ -38,10 +42,11 @@
             console.log('WebSocket-verbinding gesloten');
             document.getElementById('start-button').disabled = false;
             document.getElementById('stop-button').disabled = true;
+            document.getElementById('stop-button').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-button').classList.remove('hover:bg-red-600');
         };
     }
 
-    // Functie om de WebSocket-verbinding te stoppen
     function stopWebSocket() {
         if (ws) {
             ws.close();
@@ -49,7 +54,6 @@
         }
     }
 
-    // Event listeners voor de knoppen
     document.getElementById('start-button').addEventListener('click', startWebSocket);
     document.getElementById('stop-button').addEventListener('click', stopWebSocket);
 </script>

@@ -8,7 +8,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@types/ws": "^8.5.13",
     "node-osc": "^9.1.4",
@@ -16,6 +15,9 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
     "vite": "^5.4.11"
   },
   "pkg": {
@@ -23,5 +25,14 @@
       "osc-websocket-bridge.js",
       "node_modules/**"
     ]
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Symphonic-eMotions/osc-websocket-bridge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Symphonic-eMotions/osc-websocket-bridge/issues"
+  },
+  "homepage": "https://github.com/Symphonic-eMotions/osc-websocket-bridge#readme",
+  "description": ""
 }
