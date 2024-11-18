@@ -1,3 +1,6 @@
+require('node-osc'); // `pkg` hint
+require('ws'); // `pkg` hint
+
 const OSC = require('node-osc');
 const WebSocket = require('ws');
 
