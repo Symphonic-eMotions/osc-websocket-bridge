@@ -4,20 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OSC WebSocket Client</title>
-    <style>
-        .slider-container {
-            margin-bottom: 20px;
-        }
-        .slider-label {
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="output.css">
 </head>
-<body>
-<h1>OSC WebSocket Client</h1>
-<button id="start-button">Start</button>
-<button id="stop-button" disabled>Stop</button>
-<div id="sliders-container"></div>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-6">
+
+<!-- Titel -->
+<h1 class="text-4xl font-bold mb-8 text-center">OSC WebSocket Client</h1>
+
+<!-- Knoppen -->
+<div class="flex space-x-4 mb-6">
+    <button id="start-button" class="px-4 py-2 bg-green-500 text-white font-medium rounded shadow-md hover:bg-green-600 transition-all">
+        Start
+    </button>
+    <button id="stop-button" disabled class="px-4 py-2 bg-red-500 text-white font-medium rounded shadow-md opacity-50 cursor-not-allowed">
+        Stop
+    </button>
+</div>
+
+<!-- Sliders container -->
+<div id="sliders-container" class="w-full max-w-lg space-y-6 bg-gray-800 p-6 rounded-lg shadow-md">
+    <!-- Sliders worden hier dynamisch toegevoegd -->
+</div>
 
 <script>
     let ws;
@@ -26,10 +33,10 @@
     // Functie om een nieuwe slider toe te voegen
     function createSlider(address) {
         const container = document.createElement('div');
-        container.classList.add('slider-container');
+        container.classList.add('flex', 'flex-col', 'space-y-2', 'bg-gray-700', 'p-4', 'rounded-md', 'shadow-md');
 
         const label = document.createElement('div');
-        label.classList.add('slider-label');
+        label.classList.add('text-sm', 'font-bold', 'text-gray-300');
         label.textContent = `Stream: ${address}`;
         container.appendChild(label);
 
@@ -39,7 +46,7 @@
         slider.max = '1';
         slider.step = '0.01'; // Hiermee kun je waarden in stappen van 0.01 hebben
         slider.value = '0';
-        slider.classList.add('slider');
+        slider.classList.add('w-full', 'cursor-pointer', 'slider-thumb');
         container.appendChild(slider);
 
         // Voeg de slider toe aan de sliders-container in de HTML
@@ -68,6 +75,8 @@
             console.log('Verbonden met WebSocket-server');
             document.getElementById('start-button').disabled = true;
             document.getElementById('stop-button').disabled = false;
+            document.getElementById('stop-button').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-button').classList.add('hover:bg-red-600');
         };
 
         ws.onmessage = (event) => {
@@ -87,6 +96,8 @@
             console.log('WebSocket-verbinding gesloten');
             document.getElementById('start-button').disabled = false;
             document.getElementById('stop-button').disabled = true;
+            document.getElementById('stop-button').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-button').classList.remove('hover:bg-red-600');
         };
     }
 
