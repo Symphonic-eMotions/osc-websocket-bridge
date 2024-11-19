@@ -23,7 +23,7 @@
   "pkg": {
     "scripts": [
       "osc-websocket-bridge.js",
-      "node_modules/**"
+      "node_modules/**/*"
     ]
   },
   "repository": {
