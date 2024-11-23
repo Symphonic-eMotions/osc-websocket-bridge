@@ -1,10 +1,24 @@
 require('dotenv').config();
 
-const { startHTTPServer } = require('./httpServer');
+const path = require('path');
+const express = require('express');
 const { startOSCServer } = require('./oscServer');
 const { startWebSocketServer } = require('./webSocketServer');
+const pagesRoutes = require('./routes/pages');
 
-startHTTPServer();
+const app = express();
+
+// Stel EJS in als view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Gebruik routes
+app.use('/', pagesRoutes);
+
+// Statische bestanden
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Start servers
 const oscServer = startOSCServer();
 const wss = startWebSocketServer();
 
@@ -36,4 +50,10 @@ wss.on('connection', function connection(ws) {
     ws.on('close', () => {
         console.log('WebSocket-verbinding gesloten');
     });
+});
+
+// Start de Express-app
+const PORT = process.env.HTTP_PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Applicatie draait op http://localhost:${PORT}`);
 });
