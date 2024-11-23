@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module overview</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<header>
+    <h1>Welcome! Choose a module:</h1>
+</header>
+<main>
+    <div class="tiles-container">
+        <% pages.forEach(page => { %>
+            <a class="tile" href="/<%= page.replace('.html', '') %>">
+                <img src="/assets/images/placeholder.png" alt="<%= page %>">
+                <span><%= page.replace('.html', '') %></span>
+            </a>
+        <% }); %>
+    </div>
+</main>
+<footer>
+    <p>&copy; 2024 Frans-Jan Wind</p>
+</footer>
+</body>
+</html>

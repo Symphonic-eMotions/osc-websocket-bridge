@@ -4,7 +4,7 @@ const { startHTTPServer } = require('./httpServer');
 const { startOSCServer } = require('./oscServer');
 const { startWebSocketServer } = require('./webSocketServer');
 
-const httpServer = startHTTPServer();
+startHTTPServer();
 const oscServer = startOSCServer();
 const wss = startWebSocketServer();
 
