@@ -1,4 +1,4 @@
-import * as Tone from 'tone';
+import * as Tone from 'https://cdn.skypack.dev/tone';
 
 let ws;
 const sliders = {}; // Object voor sliders en hun grondtonen

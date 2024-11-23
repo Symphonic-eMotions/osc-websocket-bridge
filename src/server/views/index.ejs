@@ -1,26 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Module overview</title>
-    <link rel="stylesheet" href="/assets/css/styles.css">
+    <title>Module Overview</title>
+    <link rel="stylesheet" href="/assets/css/output.css">
 </head>
-<body>
-<header>
-    <h1>Welcome! Choose a module:</h1>
+<body class="bg-gray-900 text-gray-100">
+<header class="bg-gray-800 text-white p-4 shadow">
+    <h1 class="text-center text-3xl font-bold">Welcome! Choose a module:</h1>
 </header>
-<main>
-    <div class="tiles-container">
+<main class="p-8">
+    <div class="tiles-container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <% pages.forEach(page => { %>
-            <a class="tile" href="/<%= page.replace('.html', '') %>">
-                <img src="/assets/images/placeholder.png" alt="<%= page %>">
-                <span><%= page.replace('.html', '') %></span>
+            <a class="tile block text-center p-4 bg-gray-800 text-gray-100 rounded-lg shadow-lg hover:shadow-xl hover:bg-gray-700 transition-all duration-300" href="/<%= page.replace('.html', '') %>">
+                <div class="aspect-w-16 aspect-h-9">
+                    <img class="mx-auto rounded object-cover w-full h-full" src="/assets/images/tegelbackground.webp" alt="<%= page %>">
+                </div>
+                <span class="block mt-2 font-semibold text-lg"><%= page.replace('.html', '') %></span>
             </a>
         <% }); %>
     </div>
 </main>
-<footer>
+<footer class="bg-gray-800 text-gray-400 text-center p-4 mt-8">
     <p>&copy; 2024 Frans-Jan Wind</p>
 </footer>
 </body>
