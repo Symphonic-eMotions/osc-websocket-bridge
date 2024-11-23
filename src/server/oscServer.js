@@ -1,8 +1,11 @@
 const OSC = require('node-osc');
+const config = require('./config');
 
-function startOSCServer(port = 8000, host = '0.0.0.0') {
+function startOSCServer() {
+    const { port, host } = config.osc;
+
     const oscServer = new OSC.Server(port, host);
-    console.log(`OSC-server gestart op poort ${port}`);
+    console.log(`OSC-server gestart op ${host}:${port}`);
     return oscServer;
 }
 

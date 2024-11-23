@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { startHTTPServer } = require('./httpServer');
 const { startOSCServer } = require('./oscServer');
 const { startWebSocketServer } = require('./webSocketServer');

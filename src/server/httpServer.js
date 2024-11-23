@@ -2,8 +2,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { getLocalIPAddress } = require('./utils/network');
+const config = require('./config');
 
-function startHTTPServer(port = 3000) {
+function startHTTPServer() {
+    const port = config.http.port;
+
     const server = http.createServer((req, res) => {
         const filePath = req.url === '/' ? path.join(__dirname, '../public/index.html') : path.join(__dirname, '../public', req.url);
         const extname = path.extname(filePath);
