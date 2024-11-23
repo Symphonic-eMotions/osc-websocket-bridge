@@ -29,7 +29,7 @@ const localIP = getLocalIPAddress();
 const serverPort = 3000; // Poort voor de HTTP-server
 const server = http.createServer((req, res) => {
     // Pad naar bestanden bepalen
-    const filePath = req.url === '/' ? '../public/index.html' : `.${req.url}`;
+    const filePath = req.url === '/' ? path.join(__dirname, '../public/index.html') : path.join(__dirname, '../public', req.url);
     const extname = path.extname(filePath);
     let contentType = 'text/html';
 
