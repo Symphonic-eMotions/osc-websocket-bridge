@@ -1,44 +1,51 @@
+import * as Tone from 'https://cdn.skypack.dev/tone';
 
-// Start WebSocket-verbinding en AudioContext
-// Functie om het lokale IP-adres op te halen via de server API
-async function getLocalIPAddress() {
+let ws;
+let updateSlider;
+
+// Functie om dynamisch een module te laden
+async function loadModule(modulePath) {
     try {
-        const response = await fetch('/api/local-ip');
-        if (response.ok) {
-            const data = await response.json();
-            return data.localIP; // Retourneert het IP-adres
-        } else {
-            console.error('Failed to fetch local IP:', response.statusText);
+        const module = await import(modulePath);
+        if (module.updateSlider) {
+            updateSlider = module.updateSlider;
         }
+        console.log(`Module ${modulePath} succesvol geladen`);
     } catch (err) {
-        console.error('Error fetching local IP:', err);
+        console.error(`Fout bij het laden van module ${modulePath}:`, err);
     }
-    return null;
+}
+
+function updateButtonStates(startEnabled, stopEnabled) {
+    const startButton = document.getElementById('start-button');
+    const stopButton = document.getElementById('stop-button');
+
+    // Startknop
+    startButton.disabled = !startEnabled;
+    startButton.classList.toggle('opacity-50', !startEnabled); // Voeg visuele feedback toe
+    startButton.classList.toggle('cursor-not-allowed', !startEnabled);
+
+    // Stopknop
+    stopButton.disabled = !stopEnabled;
+    stopButton.classList.toggle('opacity-50', !stopEnabled);
+    stopButton.classList.toggle('cursor-not-allowed', !stopEnabled);
 }
 
 // Start WebSocket-verbinding en AudioContext
 async function startWebSocket() {
-    // Haal het lokale IP-adres op via de API
-    const localIP = await getLocalIPAddress();
-    if (!localIP) {
-        console.error('Kan geen lokaal IP-adres ophalen.');
-        return;
-    }
+    const response = await fetch('/api/local-ip');
+    const { localIP } = await response.json();
 
-    // Start Tone.js AudioContext na gebruikersactie
     Tone.start().then(() => {
         console.log('Tone.js AudioContext gestart');
-    }).catch((err) => {
-        console.error('Error bij starten van Tone.js AudioContext:', err);
     });
 
-    const WS_PORT = 8080; // Gebruik een vaste poort
-    ws = new WebSocket(`ws://${localIP}:${WS_PORT}`); // Gebruik het IP-adres en poort
+    const WS_PORT = 8080;
+    ws = new WebSocket(`ws://${localIP}:${WS_PORT}`);
 
     ws.onopen = () => {
         console.log('Verbonden met WebSocket-server');
-        document.getElementById('start-button').disabled = true;
-        document.getElementById('stop-button').disabled = false;
+        updateButtonStates(false, true); // Start uitgeschakeld, Stop ingeschakeld
     };
 
     ws.onmessage = (event) => {
@@ -46,26 +53,60 @@ async function startWebSocket() {
         console.log('Ontvangen OSC bericht:', oscMessage);
 
         const address = oscMessage.address;
-        const args = oscMessage.args[0]; // Eerste argument
+        const args = oscMessage.args[0];
+        const scaledValue = Math.max(0, Math.min(1, args));
 
-        const scaledValue = Math.max(0, Math.min(1, args)); // Normaliseer tussen 0-1
-        updateSlider(address, scaledValue);
+        if (updateSlider) {
+            updateSlider(address, scaledValue);
+        } else {
+            console.warn('updateSlider is niet geladen!');
+        }
     };
 
     ws.onclose = () => {
         console.log('WebSocket-verbinding gesloten');
-        document.getElementById('start-button').disabled = false;
-        document.getElementById('stop-button').disabled = true;
+        updateButtonStates(true, false); // Start ingeschakeld, Stop uitgeschakeld
     };
 }
 
 // Stop WebSocket-verbinding
 function stopWebSocket() {
     if (ws) {
-        ws.close();
-        console.log('WebSocket-verbinding wordt gesloten');
+        // Start een fade-out
+        // gainNode.gain.linearRampTo(0, 1); // Fade-out naar 0 in 1 seconde
+
+        setTimeout(() => {
+            // Stop alle audio en sluit de WebSocket-verbinding
+            Tone.stop(); // Stop de Transport als die wordt gebruikt
+            ws.close();            // Sluit de WebSocket
+            console.log('WebSocket-verbinding wordt gesloten en audio gestopt');
+        }, 100); // Wacht tot de fade-out is voltooid
     }
 }
 
-document.getElementById('start-button').addEventListener('click', startWebSocket);
-document.getElementById('stop-button').addEventListener('click', stopWebSocket);
+// Event listeners
+document.getElementById('start-button').addEventListener('click', () => {
+    console.log('Start-knop ingedrukt');
+    startWebSocket();
+});
+
+document.getElementById('stop-button').addEventListener('click', () => {
+    console.log('Stop-knop ingedrukt');
+    stopWebSocket();
+});
+
+// Zorg dat het pad naar de module dynamisch is
+document.addEventListener('DOMContentLoaded', () => {
+    const scriptTag = document.getElementById('main-script'); // Zoek expliciet naar de <script>-tag
+    if (scriptTag) {
+        const modulePath = scriptTag.getAttribute('data-module');
+        if (modulePath) {
+            loadModule(modulePath)
+                .then(() => console.log(`Module ${modulePath} succesvol geladen en verwerkt`))
+                .catch(err => console.error(`Fout bij het laden van de module ${modulePath}:`, err));
+        }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        updateButtonStates(true, false); // Start ingeschakeld, Stop uitgeschakeld
+    });
+});

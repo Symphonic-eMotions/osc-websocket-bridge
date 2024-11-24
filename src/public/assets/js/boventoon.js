@@ -1,6 +1,5 @@
 import * as Tone from 'https://cdn.skypack.dev/tone';
 
-let ws;
 const sliders = {}; // Object voor sliders en hun grondtonen
 const smoothingFactor = 0.1; // Voor soepele overgangen
 const harmonics = 5; // Aantal boventonen
@@ -68,3 +67,6 @@ function updateSlider(address, value) {
         createSlider(address);
     }
 }
+
+// Exporteer functies en objecten
+export { createSlider, updateSlider };
