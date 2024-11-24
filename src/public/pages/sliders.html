@@ -66,52 +66,7 @@
             sliders[address].value = value;
         }
     }
-
-    // Start WebSocket-verbinding
-    function startWebSocket() {
-        ws = new WebSocket('ws://localhost:8080');
-
-        ws.onopen = () => {
-            console.log('Verbonden met WebSocket-server');
-            document.getElementById('start-button').disabled = true;
-            document.getElementById('stop-button').disabled = false;
-            document.getElementById('stop-button').classList.remove('opacity-50', 'cursor-not-allowed');
-            document.getElementById('stop-button').classList.add('hover:bg-red-600');
-        };
-
-        ws.onmessage = (event) => {
-            const oscMessage = JSON.parse(event.data);
-            console.log('Ontvangen OSC bericht:', oscMessage);
-
-            // Update of maak een slider aan voor elk uniek OSC-adres
-            const address = oscMessage.address;
-            const args = oscMessage.args[0]; // Eerste argument, pas aan naar behoefte
-
-            // Zorg ervoor dat de waarde tussen 0 en 1 valt, indien nodig
-            const scaledValue = Math.max(0, Math.min(1, args));
-            updateSlider(address, scaledValue);
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket-verbinding gesloten');
-            document.getElementById('start-button').disabled = false;
-            document.getElementById('stop-button').disabled = true;
-            document.getElementById('stop-button').classList.add('opacity-50', 'cursor-not-allowed');
-            document.getElementById('stop-button').classList.remove('hover:bg-red-600');
-        };
-    }
-
-    // Stop WebSocket-verbinding
-    function stopWebSocket() {
-        if (ws) {
-            ws.close();
-            console.log('WebSocket-verbinding wordt gesloten');
-        }
-    }
-
-    // Event listeners voor de knoppen
-    document.getElementById('start-button').addEventListener('click', startWebSocket);
-    document.getElementById('stop-button').addEventListener('click', stopWebSocket);
 </script>
+<script type="module" src="../assets/js/main.js"></script>
 </body>
 </html>

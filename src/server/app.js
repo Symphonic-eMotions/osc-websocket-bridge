@@ -1,31 +1,40 @@
 require('dotenv').config();
 
+// Cross-platform compatible paths
 const path = require('path');
+// Local webserver
 const express = require('express');
+// Local OSC server
 const { startOSCServer } = require('./oscServer');
+// Webpage connector
 const { startWebSocketServer } = require('./webSocketServer');
+// Pages controller
 const pagesRoutes = require('./routes/pages');
+// Api controller
+const apiRoutes = require('./routes/api');
 
+// The app is the webserver
 const app = express();
 
-// Stel EJS in als view engine
+// EJS View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Gebruik routes
+// Pages controller returns routes
 app.use('/', pagesRoutes);
+app.use('/api', apiRoutes);
 
-// Statische bestanden
+// Pass webserver pages locations for dynamic pages navigation
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Start servers
 const oscServer = startOSCServer();
 const wss = startWebSocketServer();
 
-// Set om unieke OSC-adressen bij te houden
+// Store unique OSC-adresses
 const uniqueAddresses = new Set();
 
-// Handeling voor nieuwe WebSocket-verbindingen
+// Take care of new WebSocket connections
 wss.on('connection', function connection(ws) {
     console.log('Nieuwe WebSocket-verbinding');
 
@@ -54,6 +63,8 @@ wss.on('connection', function connection(ws) {
 
 // Start de Express-app
 const PORT = process.env.HTTP_PORT || 3000;
+const { getLocalIPAddress } = require('./utils/network');
 app.listen(PORT, () => {
-    console.log(`Applicatie draait op http://localhost:${PORT}`);
+    const localIP = getLocalIPAddress(); // Roep de functie aan
+    console.log(`Applicatie draait op http://${localIP}:${PORT}`);
 });
