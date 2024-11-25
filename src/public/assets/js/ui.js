@@ -55,6 +55,16 @@ class UI {
         this.sliders = {};
         console.log('Alle sliders zijn gereset.');
     }
+
+    displayFFTResults(fftResult) {
+        const container = document.getElementById('sliders-container');
+        fftResult.forEach(({ frequency, amplitude }) => {
+            const freqElement = document.createElement('div');
+            freqElement.textContent = `Freq: ${Math.round(frequency)} Hz, Amp: ${amplitude.toFixed(2)}`;
+            freqElement.classList.add('fft-result');
+            container.appendChild(freqElement);
+        });
+    }
 }
 
 export const ui = new UI('sliders-container');

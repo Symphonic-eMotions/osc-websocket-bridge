@@ -5,7 +5,7 @@ class AudioEngine {
         this.init();
         this.clock = new Tone.Clock((time) => {
             // Voorbeeld: je kunt hier acties uitvoeren per tick
-            console.log('Clock tick:', time);
+            // console.log('Clock tick:', time);
         }, 1); // Clock op 1 Hz
     }
 
@@ -101,6 +101,65 @@ class AudioEngine {
                 console.log('AudioEngine gestopt en AudioContext gesloten.');
             }
         }, duration * 1000);
+    }
+
+    async analyzeLocalAudio(filePath) {
+        try {
+            console.log(`Start analyse van: ${filePath}`);
+
+            // Fetch het audiobestand
+            const response = await fetch(filePath);
+            const arrayBuffer = await response.arrayBuffer();
+
+            // Decodeer het audiobestand
+            const audioBuffer = await Tone.getContext().rawContext.decodeAudioData(arrayBuffer);
+
+            // Pak het eerste kanaal voor FFT
+            const channelData = audioBuffer.getChannelData(0);
+
+            // Gebruik de AnalyserNode voor FFT
+            const analyser = Tone.getContext().createAnalyser();
+            analyser.fftSize = 2048;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Float32Array(bufferLength);
+
+            // Vul analyser met kanaaldata
+            const source = Tone.getContext().createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(analyser);
+            analyser.connect(Tone.getContext().rawContext.destination);
+
+            // Start de bron en voer FFT uit
+            source.start(0);
+
+            // Wacht tot de bron is afgespeeld
+            await new Promise((resolve) => {
+                source.onended = resolve;
+            });
+
+            analyser.getFloatFrequencyData(dataArray);
+
+            // Maak frequentie/amplitude-paren
+            const sampleRate = audioBuffer.sampleRate;
+            const frequencies = Array.from({ length: bufferLength }, (_, i) => (i * sampleRate) / analyser.fftSize);
+            const results = frequencies.map((frequency, i) => ({
+                frequency,
+                amplitude: dataArray[i],
+            }));
+
+            // Sorteer en pak de top 10 frequenties
+            const top10 = results
+                .filter(({ amplitude }) => amplitude > -100) // Filter ruis
+                .sort((a, b) => b.amplitude - a.amplitude)
+                .slice(0, 10);
+
+            console.log('Top 10 frequenties:', top10);
+            return top10;
+        } catch (error) {
+            console.error('Fout bij audio-analyse:', error);
+            return [];
+        }
     }
 }
 

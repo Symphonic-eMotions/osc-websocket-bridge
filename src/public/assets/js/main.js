@@ -1,5 +1,4 @@
 import * as Tone from 'https://cdn.skypack.dev/tone';
-
 import { ui } from './ui.js';
 import { audioEngine } from './audioEngine.js';
 
@@ -26,10 +25,17 @@ async function startWebSocket() {
     const WS_PORT = 8080;
     ws = new WebSocket(`ws://${localIP}:${WS_PORT}`);
 
-    ws.onopen = () => {
+    ws.onopen = async () => {
         console.log('Verbonden met WebSocket-server');
         updateButtonStates(false, true); // Start uitgeschakeld, Stop ingeschakeld
         audioEngine.startClock(); // Start de clock
+
+        if (mode === 'variatie') {
+            // Analyseer audiobestand en geef resultaten door aan de UI
+            const filePath = '/audio/sample.wav'; // Pad naar audiobestand
+            const fftResults = await audioEngine.analyzeLocalAudio(filePath);
+            ui.displayFFTResults(fftResults);
+        }
     };
 
     ws.onmessage = (event) => {
@@ -73,12 +79,10 @@ function updateButtonStates(startEnabled, stopEnabled) {
     const startButton = document.getElementById('start-button');
     const stopButton = document.getElementById('stop-button');
 
-    // Startknop
     startButton.disabled = !startEnabled;
     startButton.classList.toggle('opacity-50', !startEnabled);
     startButton.classList.toggle('cursor-not-allowed', !startEnabled);
 
-    // Stopknop
     stopButton.disabled = !stopEnabled;
     stopButton.classList.toggle('opacity-50', !stopEnabled);
     stopButton.classList.toggle('cursor-not-allowed', !stopEnabled);
