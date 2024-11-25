@@ -5,8 +5,8 @@ class AudioEngine {
         this.init();
         this.clock = new Tone.Clock((time) => {
             // Voorbeeld: je kunt hier acties uitvoeren per tick
-            // console.log('Clock tick:', time);
-        }, 1); // Clock op 1 Hz
+            console.log('Clock tick minute:', time);
+        }, 0.0167); // Clock op 1 tick per minuut
     }
 
     init() {
@@ -117,44 +117,65 @@ class AudioEngine {
             // Pak het eerste kanaal voor FFT
             const channelData = audioBuffer.getChannelData(0);
 
-            // Gebruik de AnalyserNode voor FFT
-            const analyser = Tone.getContext().createAnalyser();
-            analyser.fftSize = 2048;
-
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Float32Array(bufferLength);
-
-            // Vul analyser met kanaaldata
-            const source = Tone.getContext().createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(analyser);
-            analyser.connect(Tone.getContext().rawContext.destination);
-
-            // Start de bron en voer FFT uit
-            source.start(0);
-
-            // Wacht tot de bron is afgespeeld
-            await new Promise((resolve) => {
-                source.onended = resolve;
-            });
-
-            analyser.getFloatFrequencyData(dataArray);
-
-            // Maak frequentie/amplitude-paren
+            // Parameters voor FFT
+            const fftSize = 2048; // Aantal samples per FFT
             const sampleRate = audioBuffer.sampleRate;
-            const frequencies = Array.from({ length: bufferLength }, (_, i) => (i * sampleRate) / analyser.fftSize);
-            const results = frequencies.map((frequency, i) => ({
-                frequency,
-                amplitude: dataArray[i],
-            }));
 
-            // Sorteer en pak de top 10 frequenties
-            const top10 = results
-                .filter(({ amplitude }) => amplitude > -100) // Filter ruis
-                .sort((a, b) => b.amplitude - a.amplitude)
+            // Buffer om de luidste frequenties te bewaren
+            const loudestFrequencies = new Map(); // { frequency: maxNormalizedAmplitude }
+
+            // Itereer over de audio in segmenten van fftSize
+            for (let start = 0; start < channelData.length; start += fftSize) {
+                const segment = channelData.slice(start, start + fftSize);
+
+                // Gebruik FFT om frequenties en amplitudes te bepalen
+                const analyser = Tone.getContext().createAnalyser();
+                analyser.fftSize = fftSize;
+                const bufferSource = Tone.getContext().createBufferSource();
+
+                // Maak een audiobuffer van het segment
+                const segmentBuffer = Tone.getContext().rawContext.createBuffer(1, segment.length, sampleRate);
+                segmentBuffer.getChannelData(0).set(segment);
+
+                bufferSource.buffer = segmentBuffer;
+                bufferSource.connect(analyser);
+                bufferSource.start();
+
+                // Wacht tot de buffer is afgespeeld
+                await new Promise((resolve) => (bufferSource.onended = resolve));
+
+                // Haal frequentie- en amplitudegegevens op
+                const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(frequencyData);
+
+                const frequencies = Array.from({ length: frequencyData.length }, (_, i) =>
+                    (i * sampleRate) / fftSize
+                );
+
+                // Bereken de maximum amplitude om te normaliseren
+                const maxAmplitude = Math.max(...frequencyData);
+
+                // Bijhouden van luidste frequenties met genormaliseerde amplitude
+                frequencyData.forEach((amplitude, index) => {
+                    const frequency = frequencies[index];
+                    const normalizedAmplitude = amplitude / maxAmplitude; // Normaliseer naar (0-1)
+
+                    if (
+                        !loudestFrequencies.has(frequency) ||
+                        loudestFrequencies.get(frequency) < normalizedAmplitude
+                    ) {
+                        loudestFrequencies.set(frequency, normalizedAmplitude);
+                    }
+                });
+            }
+
+            // Sorteer frequenties op genormaliseerde amplitude en pak de top 10
+            const top10 = Array.from(loudestFrequencies)
+                .map(([frequency, normalizedAmplitude]) => ({ frequency, normalizedAmplitude }))
+                .sort((a, b) => b.normalizedAmplitude - a.normalizedAmplitude)
                 .slice(0, 10);
 
-            console.log('Top 10 frequenties:', top10);
+            console.log('Top 10 frequenties met genormaliseerde amplitudes:', top10);
             return top10;
         } catch (error) {
             console.error('Fout bij audio-analyse:', error);

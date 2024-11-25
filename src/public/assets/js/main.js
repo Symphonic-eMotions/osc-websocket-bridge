@@ -34,7 +34,15 @@ async function startWebSocket() {
             // Analyseer audiobestand en geef resultaten door aan de UI
             const filePath = '/audio/sample.wav'; // Pad naar audiobestand
             const fftResults = await audioEngine.analyzeLocalAudio(filePath);
-            ui.displayFFTResults(fftResults);
+
+            // Converteer resultaten voor weergave in de UI
+            const formattedResults = fftResults.map(({ frequency, normalizedAmplitude }) => {
+                return {
+                    frequency: frequency.toFixed(2) + ' Hz', // Frequentie afronden en label toevoegen
+                    amplitude: (normalizedAmplitude * 100).toFixed(2) + '%', // Genormaliseerde amplitude als percentage
+                };
+            });
+            ui.displayFFTResults(formattedResults);
         }
     };
 
