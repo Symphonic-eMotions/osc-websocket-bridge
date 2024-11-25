@@ -12,7 +12,7 @@ console.log(`Huidige modus: ${mode}`);
 
 async function startWebSocket() {
     // Controleer of de AudioContext gesloten is
-    if (Tone.context.state === 'closed') {
+    if (Tone.getContext().rawContext.state === 'closed') {
         console.log('AudioContext gesloten, opnieuw initialiseren...');
         audioEngine.init(); // Herinitialiseer de audio-engine
     }
@@ -29,6 +29,7 @@ async function startWebSocket() {
     ws.onopen = () => {
         console.log('Verbonden met WebSocket-server');
         updateButtonStates(false, true); // Start uitgeschakeld, Stop ingeschakeld
+        audioEngine.startClock(); // Start de clock
     };
 
     ws.onmessage = (event) => {
@@ -55,6 +56,7 @@ async function startWebSocket() {
     ws.onclose = () => {
         console.log('WebSocket-verbinding gesloten');
         updateButtonStates(true, false); // Start ingeschakeld, Stop uitgeschakeld
+        audioEngine.stopClock(); // Stop de clock als WebSocket sluit
     };
 }
 
@@ -63,6 +65,7 @@ function stopWebSocket() {
         audioEngine.fadeOutAndStop(1); // Fade-out en sluit audio-engine
         ws.close();
         ui.resetSliders();
+        audioEngine.stopClock(); // Zorg ervoor dat de clock wordt gestopt
     }
 }
 
@@ -81,9 +84,11 @@ function updateButtonStates(startEnabled, stopEnabled) {
     stopButton.classList.toggle('cursor-not-allowed', !stopEnabled);
 }
 
+// Event listeners voor start- en stop-knoppen
 document.getElementById('start-button').addEventListener('click', startWebSocket);
 document.getElementById('stop-button').addEventListener('click', stopWebSocket);
 
+// Initialiseer knoppen bij het laden van de pagina
 document.addEventListener('DOMContentLoaded', () => {
     updateButtonStates(true, false); // Start ingeschakeld, Stop uitgeschakeld
 });

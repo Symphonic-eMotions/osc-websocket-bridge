@@ -2,18 +2,33 @@ import * as Tone from 'https://cdn.skypack.dev/tone';
 
 class AudioEngine {
     constructor() {
-        this.init(); // Initialiseer bij aanmaken
+        this.init();
+        this.clock = new Tone.Clock((time) => {
+            // Voorbeeld: je kunt hier acties uitvoeren per tick
+            console.log('Clock tick:', time);
+        }, 1); // Clock op 1 Hz
     }
 
     init() {
-        if (Tone.context.state === 'closed') {
+        const currentContext = Tone.getContext();
+        if (currentContext.rawContext.state === 'closed') {
             console.log('AudioContext gesloten, een nieuwe context wordt gemaakt...');
-            Tone.setContext(new Tone.Context()); // Maak een nieuwe Tone.Context
+            Tone.setContext(new Tone.Context());
         }
 
         this.gainNode = new Tone.Gain(1).toDestination();
-        this.nodes = {}; // Opslag voor alle audio nodes per adres
+        this.nodes = {};
         console.log('AudioEngine opnieuw geïnitialiseerd.');
+    }
+
+    startClock() {
+        this.clock.start();
+        console.log('Clock gestart');
+    }
+
+    stopClock() {
+        this.clock.stop();
+        console.log('Clock gestopt');
     }
 
     createOscillators(address, harmonics = 5) {
@@ -32,7 +47,7 @@ class AudioEngine {
 
         for (let i = 0; i <= harmonics; i++) {
             const oscillator = new Tone.Oscillator({
-                frequency: 440 * (i + 1), // Grondtoon * harmonische index
+                frequency: 440 * (i + 1),
                 type: 'sine',
             }).start();
 
@@ -55,10 +70,10 @@ class AudioEngine {
 
         data.currentValue += smoothingFactor * (value - data.currentValue);
 
-        const baseFrequency = data.currentValue * 880; // Max grondtoon: 880 Hz
+        const baseFrequency = data.currentValue * 880;
         data.oscillators.forEach((osc, i) => {
             osc.frequency.value = baseFrequency * (i + 1);
-            data.volumes[i].volume.value = -10 * i - (1 / (data.currentValue || 1)); // Afname in amplitude
+            data.volumes[i].volume.value = -10 * i - (1 / (data.currentValue || 1));
         });
     }
 
@@ -70,7 +85,7 @@ class AudioEngine {
         }
 
         data.oscillators.forEach((osc, i) => {
-            data.volumes[i].volume.value = value * -10; // Amplitude wordt direct beïnvloed
+            data.volumes[i].volume.value = value * -10;
         });
     }
 
@@ -80,9 +95,9 @@ class AudioEngine {
         }
 
         setTimeout(() => {
-            Tone.Transport.stop();
-            if (Tone.context.state !== 'closed') {
-                Tone.context.close(); // AudioContext sluiten
+            this.stopClock(); // Stop de clock als vervanging van Transport
+            if (Tone.getContext().rawContext.state !== 'closed') {
+                Tone.getContext().dispose();
                 console.log('AudioEngine gestopt en AudioContext gesloten.');
             }
         }, duration * 1000);
