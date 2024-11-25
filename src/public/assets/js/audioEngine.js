@@ -62,6 +62,18 @@ class AudioEngine {
         });
     }
 
+    updateAmplitude(address, value) {
+        const data = this.nodes[address];
+        if (!data) {
+            console.warn(`Geen oscillators gevonden voor ${address}.`);
+            return;
+        }
+
+        data.oscillators.forEach((osc, i) => {
+            data.volumes[i].volume.value = value * -10; // Amplitude wordt direct beïnvloed
+        });
+    }
+
     fadeOutAndStop(duration = 1) {
         if (this.gainNode) {
             this.gainNode.gain.linearRampTo(0, duration);

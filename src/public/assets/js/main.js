@@ -5,6 +5,11 @@ import { audioEngine } from './audioEngine.js';
 
 let ws;
 
+// Get page attribute from script-tag
+const scriptTag = document.getElementById('main-script'); // Gebruik expliciete ID
+const mode = scriptTag.getAttribute('data-mode') || 'default';
+console.log(`Huidige modus: ${mode}`);
+
 async function startWebSocket() {
     // Controleer of de AudioContext gesloten is
     if (Tone.context.state === 'closed') {
@@ -36,7 +41,15 @@ async function startWebSocket() {
             ui.createSlider(address); // Maak een nieuwe slider als deze nog niet bestaat
         }
         ui.updateSlider(address, scaledValue); // Update bestaande slider
-        audioEngine.updateOscillators(address, scaledValue); // Update geluid
+
+        // Gebruik pagina-specifieke logica op basis van mode
+        if (mode === 'boventoon') {
+            audioEngine.updateOscillators(address, scaledValue);
+        } else if (mode === 'variatie') {
+            audioEngine.updateAmplitude(address, scaledValue);
+        } else {
+            console.warn(`Geen specifieke logica geïmplementeerd voor modus: ${mode}`);
+        }
     };
 
     ws.onclose = () => {
