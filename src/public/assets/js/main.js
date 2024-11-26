@@ -64,7 +64,7 @@ async function startWebSocket() {
         if (mode === 'boventoon') {
             audioEngine.updateOscillators(address, scaledValue);
         } else if (mode === 'variatie') {
-            audioEngine.updateAmplitude(address, scaledValue);
+            audioEngine.updateOscillatorsForHarmonics(address, scaledValue); // Nieuwe methode
         } else {
             console.warn(`Geen specifieke logica geïmplementeerd voor modus: ${mode}`);
         }

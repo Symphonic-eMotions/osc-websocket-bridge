@@ -16,7 +16,9 @@ class AudioEngine {
             Tone.setContext(new Tone.Context());
         }
 
-        this.gainNode = new Tone.Gain(1).toDestination();
+        // this.gainNode = new Tone.Gain(1).toDestination();
+        this.limiter = new Tone.Limiter(-5).toDestination(); // Limiteer het signaal tot -1 dB
+        this.gainNode = new Tone.Gain(1).connect(this.limiter);
         this.nodes = {};
         console.log('AudioEngine opnieuw geïnitialiseerd.');
     }
@@ -77,18 +79,6 @@ class AudioEngine {
         });
     }
 
-    updateAmplitude(address, value) {
-        const data = this.nodes[address];
-        if (!data) {
-            console.warn(`Geen oscillators gevonden voor ${address}.`);
-            return;
-        }
-
-        data.oscillators.forEach((osc, i) => {
-            data.volumes[i].volume.value = value * -10;
-        });
-    }
-
     createOscillatorsFromHarmonics(address, harmonics) {
         if (!this.gainNode) {
             console.warn('AudioEngine is niet geïnitialiseerd. Roep init() eerst aan.');
@@ -106,23 +96,60 @@ class AudioEngine {
         harmonics.forEach(({ frequency, normalizedAmplitude }) => {
             // Maak een oscillator voor elke harmonische
             const oscillator = new Tone.Oscillator({
-                frequency: frequency, // Gebruik de frequentie uit de FFT
+                frequency: frequency, // Frequentie uit FFT
                 type: 'sine',
             }).start();
 
             // Stel het volume in op basis van de genormaliseerde amplitude
             const volume = new Tone.Volume(-Infinity).connect(this.gainNode);
-            volume.volume.value = Tone.gainToDb(normalizedAmplitude); // Zet amplitude om naar dB
             oscillator.connect(volume);
 
             oscillators.push(oscillator);
             volumes.push(volume);
         });
 
-        this.nodes[address] = { oscillators, volumes };
+        // Sla oscillatoren, volumes en oorspronkelijke harmonischen op
+        this.nodes[address] = {
+            oscillators,
+            volumes,
+            harmonics, // Opslaan van originele harmonische data
+        };
+
         console.log(`Oscillators voor ${address} aangemaakt met ${harmonics.length} harmonischen.`);
     }
 
+    updateOscillatorsForHarmonics(address, value, smoothingFactor = 0.1) {
+        const data = this.nodes[address];
+        if (!data) {
+            console.warn(`Geen oscillators gevonden voor ${address}.`);
+            return;
+        }
+
+        // De inkomende waarde normaliseren (verwacht bereik: 0-1)
+        const normalizedValue = Math.max(0, Math.min(1, value));
+        const totalHarmonics = data.volumes.length; // Aantal oscillatoren
+        const scalingFactor = 1 / Math.sqrt(totalHarmonics); // Verminder volume proportioneel
+
+        // Update amplitudes van oscillatoren op basis van FFT-verhoudingen
+        data.volumes.forEach((volume, index) => {
+            // Originele FFT-amplitudeverhouding voor deze harmonische
+            const originalAmplitude = data.harmonics[index].normalizedAmplitude;
+
+            // Nieuwe doelamplitude op basis van de FFT-verhouding en de genormaliseerde waarde
+            const targetAmplitude = normalizedValue * originalAmplitude * scalingFactor; // Schalen
+
+            // Huidige amplitude van het volume
+            const currentAmplitude = Tone.dbToGain(volume.volume.value);
+
+            // Smoothing toepassen
+            const smoothedAmplitude = currentAmplitude + smoothingFactor * (targetAmplitude - currentAmplitude);
+
+            // Zet het nieuwe volume
+            volume.volume.value = Tone.gainToDb(smoothedAmplitude);
+        });
+
+        console.log(`Harmonics voor ${address} geüpdatet met waarde: ${normalizedValue}`);
+    }
 
     fadeOutAndStop(duration = 1) {
         if (this.gainNode) {
@@ -156,12 +183,20 @@ class AudioEngine {
             const fftSize = 2048; // Aantal samples per FFT
             const sampleRate = audioBuffer.sampleRate;
 
-            // Buffer om de luidste frequenties te bewaren
-            const loudestFrequencies = new Map(); // { frequency: maxNormalizedAmplitude }
+            // Bepaal het karakteristieke segment (bijvoorbeeld na 20% en vóór 80% van de sample)
+            const startSegment = Math.floor(channelData.length * 0.2);
+            const endSegment = Math.floor(channelData.length * 0.8);
+            const segmentLength = endSegment - startSegment;
 
-            // Itereer over de audio in segmenten van fftSize
-            for (let start = 0; start < channelData.length; start += fftSize) {
-                const segment = channelData.slice(start, start + fftSize);
+            // Selecteer alleen het karakteristieke deel van de audio
+            const middleSegment = channelData.slice(startSegment, endSegment);
+
+            // Buffer om gemiddelde amplitudes te berekenen
+            const frequencyAmplitudes = new Map(); // { frequency: { totalAmplitude, count } }
+
+            // Itereer over het geselecteerde segment in blokken van fftSize
+            for (let start = 0; start < segmentLength; start += fftSize) {
+                const segment = middleSegment.slice(start, start + fftSize);
 
                 // Gebruik FFT om frequenties en amplitudes te bepalen
                 const analyser = Tone.getContext().createAnalyser();
@@ -187,36 +222,46 @@ class AudioEngine {
                     (i * sampleRate) / fftSize
                 );
 
-                // Bereken de maximum amplitude om te normaliseren
-                const maxAmplitude = Math.max(...frequencyData);
-
-                // Bijhouden van luidste frequenties met genormaliseerde amplitude
+                // Bereken gemiddelde amplitude per frequentie
                 frequencyData.forEach((amplitude, index) => {
                     const frequency = frequencies[index];
-                    const normalizedAmplitude = amplitude / maxAmplitude; // Normaliseer naar (0-1)
 
-                    if (
-                        !loudestFrequencies.has(frequency) ||
-                        loudestFrequencies.get(frequency) < normalizedAmplitude
-                    ) {
-                        loudestFrequencies.set(frequency, normalizedAmplitude);
+                    if (!frequencyAmplitudes.has(frequency)) {
+                        frequencyAmplitudes.set(frequency, { totalAmplitude: 0, count: 0 });
                     }
+
+                    const freqData = frequencyAmplitudes.get(frequency);
+                    freqData.totalAmplitude += amplitude;
+                    freqData.count += 1;
                 });
             }
 
-            // Sorteer frequenties op genormaliseerde amplitude en pak de top 10
-            const top10 = Array.from(loudestFrequencies)
-                .map(([frequency, normalizedAmplitude]) => ({ frequency, normalizedAmplitude }))
-                .sort((a, b) => b.normalizedAmplitude - a.normalizedAmplitude)
-                .slice(0, 10);
+            // Bereken gemiddelde amplitude per frequentie
+            const averagedFrequencies = Array.from(frequencyAmplitudes).map(([frequency, { totalAmplitude, count }]) => {
+                const averageAmplitude = totalAmplitude / count;
+                return {
+                    frequency,
+                    normalizedAmplitude: averageAmplitude / 255, // Normaliseer naar (0-1)
+                };
+            });
 
-            console.log('Top 10 frequenties met genormaliseerde amplitudes:', top10);
-            return top10;
+            // Introduceer willekeur in de selectie
+            const topFreqAmount = 10; // Aantal gewenste frequenties
+            const randomizedFrequencies = averagedFrequencies
+                .filter((f) => f.normalizedAmplitude > 0.1) // Filter zwakke frequenties uit
+                .sort((a, b) => b.normalizedAmplitude - a.normalizedAmplitude) // Sorteer op sterkte
+                .map((item, index) => ({ ...item, randomScore: Math.random() * (1 / (index + 1)) })) // Voeg random score toe
+                .sort((a, b) => b.randomScore - a.randomScore) // Sorteer opnieuw op random score
+                .slice(0, topFreqAmount); // Selecteer de top x frequenties
+
+            console.log('Geselecteerde frequenties met willekeur:', randomizedFrequencies);
+            return randomizedFrequencies;
         } catch (error) {
             console.error('Fout bij audio-analyse:', error);
             return [];
         }
     }
+
 }
 
 export const audioEngine = new AudioEngine();
