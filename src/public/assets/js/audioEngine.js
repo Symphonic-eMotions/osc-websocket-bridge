@@ -248,7 +248,7 @@ class AudioEngine {
             // Introduceer willekeur in de selectie
             const topFreqAmount = 10; // Aantal gewenste frequenties
             const randomizedFrequencies = averagedFrequencies
-                .filter((f) => f.normalizedAmplitude > 0.1) // Filter zwakke frequenties uit
+                .filter((f) => f.normalizedAmplitude > 0.01) // Filter zwakke frequenties uit
                 .sort((a, b) => b.normalizedAmplitude - a.normalizedAmplitude) // Sorteer op sterkte
                 .map((item, index) => ({ ...item, randomScore: Math.random() * (1 / (index + 1)) })) // Voeg random score toe
                 .sort((a, b) => b.randomScore - a.randomScore) // Sorteer opnieuw op random score
@@ -261,7 +261,6 @@ class AudioEngine {
             return [];
         }
     }
-
 }
 
 export const audioEngine = new AudioEngine();
