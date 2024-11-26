@@ -89,6 +89,41 @@ class AudioEngine {
         });
     }
 
+    createOscillatorsFromHarmonics(address, harmonics) {
+        if (!this.gainNode) {
+            console.warn('AudioEngine is niet geïnitialiseerd. Roep init() eerst aan.');
+            return;
+        }
+
+        if (this.nodes[address]) {
+            console.warn(`Oscillators voor ${address} bestaan al.`);
+            return;
+        }
+
+        const oscillators = [];
+        const volumes = [];
+
+        harmonics.forEach(({ frequency, normalizedAmplitude }) => {
+            // Maak een oscillator voor elke harmonische
+            const oscillator = new Tone.Oscillator({
+                frequency: frequency, // Gebruik de frequentie uit de FFT
+                type: 'sine',
+            }).start();
+
+            // Stel het volume in op basis van de genormaliseerde amplitude
+            const volume = new Tone.Volume(-Infinity).connect(this.gainNode);
+            volume.volume.value = Tone.gainToDb(normalizedAmplitude); // Zet amplitude om naar dB
+            oscillator.connect(volume);
+
+            oscillators.push(oscillator);
+            volumes.push(volume);
+        });
+
+        this.nodes[address] = { oscillators, volumes };
+        console.log(`Oscillators voor ${address} aangemaakt met ${harmonics.length} harmonischen.`);
+    }
+
+
     fadeOutAndStop(duration = 1) {
         if (this.gainNode) {
             this.gainNode.gain.linearRampTo(0, duration);

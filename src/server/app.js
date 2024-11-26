@@ -34,13 +34,27 @@ const wss = startWebSocketServer();
 // Store unique OSC-adresses
 const uniqueAddresses = new Set();
 
+// Hard coded transformation for fft controller
+let firstSignalAddress = null;
+
 // Take care of new WebSocket connections
 wss.on('connection', function connection(ws) {
     console.log('Nieuwe WebSocket-verbinding');
 
     // OSC-berichten ontvangen en doorsturen naar WebSocket-clients
     oscServer.on('message', function (msg) {
-        const address = msg[0]; // Het adres van het OSC-bericht
+        let address = msg[0]; // Het adres van het OSC-bericht
+
+        // Stel het eerste adres in als 'fft-generated'
+        if (!firstSignalAddress) {
+            firstSignalAddress = address;
+            console.log(`Eerste signaal ontvangen. Origineel adres: ${address}, wordt omgezet naar: 'fft-generated'`);
+        }
+
+        // Controleer of dit het eerste adres is
+        if (address === firstSignalAddress) {
+            address = 'fft-generated'; // Herschrijven naar vast adres
+        }
 
         // Log alleen de eerste keer een uniek adres
         if (!uniqueAddresses.has(address)) {

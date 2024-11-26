@@ -35,14 +35,17 @@ async function startWebSocket() {
             const filePath = '/audio/sample.wav'; // Pad naar audiobestand
             const fftResults = await audioEngine.analyzeLocalAudio(filePath);
 
-            // Converteer resultaten voor weergave in de UI
-            const formattedResults = fftResults.map(({ frequency, normalizedAmplitude }) => {
-                return {
-                    frequency: frequency.toFixed(2) + ' Hz', // Frequentie afronden en label toevoegen
-                    amplitude: (normalizedAmplitude * 100).toFixed(2) + '%', // Genormaliseerde amplitude als percentage
-                };
-            });
-            ui.displayFFTResults(formattedResults);
+            // Maak oscillatoren gebaseerd op de FFT-resultaten
+            const address = 'fft-generated'; // Unieke identifier voor deze set oscillatoren
+            audioEngine.createOscillatorsFromHarmonics(address, fftResults);
+
+            // Toon de resultaten in de UI
+            ui.displayFFTResults(
+                fftResults.map(({ frequency, normalizedAmplitude }) => ({
+                    frequency: `${frequency.toFixed(2)} Hz`,
+                    amplitude: `${(normalizedAmplitude * 100).toFixed(2)}%`,
+                }))
+            );
         }
     };
 
