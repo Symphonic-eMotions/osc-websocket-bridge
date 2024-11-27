@@ -56,17 +56,20 @@ async function startWebSocket() {
         const scaledValue = Math.max(0, Math.min(1, args));
 
         if (!ui.sliders[address]) {
-            ui.createSlider(address); // Maak een nieuwe slider als deze nog niet bestaat
+            ui.createSlider(address); // Maak een nieuwe slider
         }
         ui.updateSlider(address, scaledValue); // Update bestaande slider
 
-        // Gebruik pagina-specifieke logica op basis van mode
-        if (mode === 'boventoon') {
-            audioEngine.updateOscillators(address, scaledValue);
-        } else if (mode === 'variatie') {
-            audioEngine.updateOscillatorsForHarmonics(address, scaledValue); // Nieuwe methode
-        } else {
-            console.warn(`Geen specifieke logica geïmplementeerd voor modus: ${mode}`);
+        if (mode === 'variatie') {
+            if (address === 'fft-generated') {
+                audioEngine.updateOscillatorsForHarmonics(address, scaledValue);
+            } else if (address.endsWith('-amplitude-lfo')) {
+                const baseAddress = address.replace('-amplitude-lfo', '');
+                audioEngine.updateLFOs(baseAddress, 'amplitude', scaledValue);
+            } else if (address.endsWith('-frequency-lfo')) {
+                const baseAddress = address.replace('-frequency-lfo', '');
+                audioEngine.updateLFOs(baseAddress, 'frequency', scaledValue);
+            }
         }
     };
 

@@ -56,17 +56,24 @@ wss.on('connection', function connection(ws) {
             address = 'fft-generated'; // Herschrijven naar vast adres
         }
 
-        // Log alleen de eerste keer een uniek adres
-        if (!uniqueAddresses.has(address)) {
-            uniqueAddresses.add(address);
-            console.log('Ontvangen uniek OSC-bericht:', address);
-        }
+        // Voeg LFO-adressen toe voor amplitude en frequentie
+        const amplitudeLFOAddress = `${address}-amplitude-lfo`;
+        const frequencyLFOAddress = `${address}-frequency-lfo`;
 
-        // OSC-bericht omzetten naar JSON om te versturen naar de browser
-        const jsonMessage = JSON.stringify({ address: address, args: msg.slice(1) });
+        // Voeg deze nieuwe adressen toe aan het unieke adreslog
+        [address, amplitudeLFOAddress, frequencyLFOAddress].forEach((addr) => {
+            if (!uniqueAddresses.has(addr)) {
+                uniqueAddresses.add(addr);
+                console.log('Ontvangen uniek OSC-bericht:', addr);
+            }
 
-        // Stuur bericht naar de verbonden WebSocket-client
-        ws.send(jsonMessage);
+            const jsonMessage = JSON.stringify({
+                address: addr,
+                args: [Math.random()], // Dummy-waarden voor sliders
+            });
+
+            ws.send(jsonMessage);
+        });
     });
 
     // Handeling voor sluiting van de verbinding

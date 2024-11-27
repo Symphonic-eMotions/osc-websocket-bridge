@@ -92,6 +92,8 @@ class AudioEngine {
 
         const oscillators = [];
         const volumes = [];
+        const amplitudeLFOs = [];
+        const frequencyLFOs = [];
 
         harmonics.forEach(({ frequency, normalizedAmplitude }) => {
             // Maak een oscillator voor elke harmonische
@@ -100,23 +102,45 @@ class AudioEngine {
                 type: 'sine',
             }).start();
 
-            // Stel het volume in op basis van de genormaliseerde amplitude
+            // Volume-instelling
             const volume = new Tone.Volume(-Infinity).connect(this.gainNode);
             oscillator.connect(volume);
 
+            // Amplitude-LFO
+            const amplitudeLFO = new Tone.LFO({
+                frequency: 0.1 + Math.random() * 0.1, // Lichte variatie in frequentie
+                min: 0,
+                max: normalizedAmplitude, // Max amplitude
+            }).start();
+            amplitudeLFO.connect(volume.volume); // Correct verbinden
+
+            // Frequentie-LFO
+            const frequencyLFO = new Tone.LFO({
+                frequency: 0.1 + Math.random() * 0.1, // Lichte variatie in frequentie
+                min: frequency - 10,
+                max: frequency + 10, // Frequentiemodulatie bereik
+            }).start();
+            frequencyLFO.connect(oscillator.frequency); // Correct verbinden
+
             oscillators.push(oscillator);
             volumes.push(volume);
+            amplitudeLFOs.push(amplitudeLFO);
+            frequencyLFOs.push(frequencyLFO);
         });
 
-        // Sla oscillatoren, volumes en oorspronkelijke harmonischen op
         this.nodes[address] = {
             oscillators,
             volumes,
-            harmonics, // Opslaan van originele harmonische data
+            harmonics,
+            lfos: {
+                amplitudeLFOs,
+                frequencyLFOs,
+            },
         };
 
         console.log(`Oscillators voor ${address} aangemaakt met ${harmonics.length} harmonischen.`);
     }
+
 
     updateOscillatorsForHarmonics(address, value, smoothingFactor = 0.1) {
         const data = this.nodes[address];
@@ -149,6 +173,28 @@ class AudioEngine {
         });
 
         console.log(`Harmonics voor ${address} geüpdatet met waarde: ${normalizedValue}`);
+    }
+
+    updateLFOs(address, lfoType, sliderValue) {
+        const data = this.nodes[address];
+        if (!data || !data.lfos) {
+            console.warn(`Geen LFO's gevonden voor ${address}.`);
+            return;
+        }
+
+        const lfos = lfoType === 'amplitude' ? data.lfos.amplitudeLFOs : data.lfos.frequencyLFOs;
+
+        lfos.forEach((lfo) => {
+            const depth = sliderValue; // Gebruik sliderwaarde direct als diepte
+            if (lfoType === 'amplitude') {
+                lfo.min = 0;
+                lfo.max = depth; // Amplitude diepte
+            } else if (lfoType === 'frequency') {
+                lfo.frequency.value = depth * 10; // Frequentie diepte
+            }
+        });
+
+        console.log(`LFO's voor ${address} geüpdatet: ${lfoType}, diepte: ${sliderValue}`);
     }
 
     fadeOutAndStop(duration = 1) {

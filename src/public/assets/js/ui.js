@@ -7,11 +7,13 @@ class UI {
     }
 
     createSlider(address) {
+        // Controleer of de slider al bestaat
         if (this.sliders[address]) {
             console.warn(`Slider voor ${address} bestaat al.`);
-            return; // Slider is al gemaakt, doe niets
+            return;
         }
 
+        // Hoofdslider voor het adres
         const container = document.createElement('div');
         container.classList.add('slider-container');
 
@@ -26,17 +28,42 @@ class UI {
         slider.max = '1';
         slider.step = '0.01';
         slider.value = '0';
-        slider.classList.add('slider', 'w-full'); // Voeg w-full toe voor volledige breedte
+        slider.classList.add('slider', 'w-full'); // Brede slider
         container.appendChild(slider);
 
+        // Event voor het wijzigen van de hoofdslider
         slider.addEventListener('input', (event) => {
             const value = parseFloat(event.target.value);
             audioEngine.updateOscillators(address, value);
         });
 
         this.container.appendChild(container);
-        this.sliders[address] = slider; // Sla de slider op
-        audioEngine.createOscillators(address);
+        this.sliders[address] = slider; // Sla de hoofdslider op
+
+        // Voeg amplitude- en frequentie-LFO-sliders toe
+        this.createLFO(address, 'amplitude');
+        this.createLFO(address, 'frequency');
+    }
+
+    // Helper-methode voor sliders
+    _createSliderElement(id, label) {
+        const container = document.createElement('div');
+        container.classList.add('slider-container');
+
+        const sliderLabel = document.createElement('label');
+        sliderLabel.textContent = label;
+        container.appendChild(sliderLabel);
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.id = id;
+        slider.min = '0';
+        slider.max = '1';
+        slider.step = '0.01';
+        slider.value = '0';
+        container.appendChild(slider);
+
+        return { container, slider };
     }
 
     updateSlider(address, value) {
@@ -54,6 +81,23 @@ class UI {
         // Leeg de sliders-array
         this.sliders = {};
         console.log('Alle sliders zijn gereset.');
+    }
+
+    createLFO(baseAddress, lfoType) {
+        const address = `${baseAddress}-${lfoType}-lfo`;
+        if (this.sliders[address]) {
+            console.warn(`LFO-slider voor ${address} bestaat al.`);
+            return;
+        }
+
+        const slider = this._createSliderElement(address, `${lfoType.charAt(0).toUpperCase() + lfoType.slice(1)} LFO`);
+        slider.addEventListener('input', (event) => {
+            const value = parseFloat(event.target.value);
+            audioEngine.updateLFOs(baseAddress, lfoType, value);
+        });
+
+        this.container.appendChild(slider.container);
+        this.sliders[address] = slider.slider;
     }
 
     displayFFTResults(fftResults) {
